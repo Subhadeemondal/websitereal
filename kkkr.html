@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Box</title>
+    <style>
+        /* Styling for the dialog box */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .dialog-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+        .video-item {
+            cursor: pointer;
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .video-item img {
+            width: 100%;
+            height: auto;
+        }
+        .video-item h3 {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+        .video-item p {
+            font-size: 16px;
+            color: #666;
+        }
+        #searchBox {
+            text-align: center;
+            margin-top: 100px;
+        }
+        #searchQuery {
+            width: 70%;
+            padding: 10px;
+            font-size: 18px;
+        }
+        #submitButton {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            margin-top: 20px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        #submitButton:hover {
+            background-color: #0056b3;
+            box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        /* Adjust the video player size */
+        .dialog-content iframe {
+            width: 100%;
+            height: 80vh; /* Adjust this value as needed */
+        }
+    </style>
+</head>
+<body>
+
+<div id="searchBox">
+    <input type="text" id="searchQuery" placeholder="Search educational content...">
+    <button onclick="openDialog()" id="submitButton">Submit</button>
+</div>
+
+<div class="dialog-overlay" id="dialogOverlay">
+    <div class="dialog-content">
+        <span class="close-btn" onclick="closeDialog()">&times;</span>
+        <h2>Top Educational YouTube Videos</h2>
+        <div id="videoPlayer"></div>
+        <div id="loadingIndicator" style="text-align: center; display: none;">
+            <img src="https://i.imgur.com/5TJ7cPA.gif" alt="Loading...">
+        </div>
+    </div>
+</div>
+
+<script>
+    let nextPageToken = ''; // For pagination
+
+    function openDialog() {
+        nextPageToken = ''; // Reset pagination token
+        loadVideos();
+        document.getElementById('dialogOverlay').style.display = 'flex';
+    }
+
+    function closeDialog() {
+        document.getElementById('dialogOverlay').style.display = 'none';
+        // Clear video player content when dialog is closed
+        document.getElementById('videoPlayer').innerHTML = '';
+    }
+
+    function loadVideos() {
+        var query = document.getElementById('searchQuery').value;
+        var apiKey = 'AIzaSyD2j0pJYQ4LZyKb8noNzJARCNvAxgdnZN4';
+        var apiUrl = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&type=video&part=snippet&q=${encodeURIComponent(query)}&maxResults=50&videoCategoryId=27&pageToken=${nextPageToken}`;
+
+        // Show loading indicator
+        document.getElementById('loadingIndicator').style.display = 'block';
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                nextPageToken = data.nextPageToken || ''; // Update pagination token
+                displayVideos(data.items);
+            })
+            .catch(error => console.error('Error fetching data:', error))
+            .finally(() => {
+                // Hide loading indicator
+                document.getElementById('loadingIndicator').style.display = 'none';
+            });
+    }
+
+    function displayVideos(videos) {
+        var videoPlayer = document.getElementById('videoPlayer');
+        videos.forEach(video => {
+            var videoItem = document.createElement('div');
+            videoItem.className = 'video-item';
+            videoItem.innerHTML = `
+                <img src="${video.snippet.thumbnails.medium.url}" alt="${video.snippet.title}">
+                <h3>${video.snippet.title}</h3>
+                <p>${video.snippet.description}</p>
+            `;
+            // Clicking on the video item will play the video
+            videoItem.addEventListener('click', function() {
+                playVideo('https://www.youtube.com/embed/' + video.id.videoId);
+            });
+            videoPlayer.appendChild(videoItem);
+        });
+    }
+
+    function playVideo(videoUrl) {
+        var videoPlayer = document.getElementById('videoPlayer');
+        videoPlayer.innerHTML = `<iframe src="${videoUrl}?autoplay=1" allowfullscreen></iframe>`;
+    }
+
+    // Infinite scrolling
+    window.addEventListener('scroll', function() {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+            // Load more videos when user reaches the bottom of the page
+            loadVideos();
+        }
+    });
+</script>
+
+</body>
+</html>
